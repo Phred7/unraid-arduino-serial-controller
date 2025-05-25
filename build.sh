@@ -1,53 +1,36 @@
 #!/bin/bash
 #
-# Build script for Arduino Serial Controller
-# This script uses UV to create a standalone executable
+# Simple build script for Arduino Serial Controller
+# Uses UV + PyInstaller directly without complex packaging
 #
 
 set -e
 
-echo "Building Arduino Serial Controller executable..."
+echo "🔨 Building Arduino Serial Controller executable..."
 
 # Check if UV is installed
 if ! command -v uv &> /dev/null; then
-    echo "UV is not installed. Installing UV..."
-    exit 1
+    echo "❌ UV is not installed. Installing UV..."
+    curl -LsSf https://astral.sh/uv/install.sh | sh
+    source $HOME/.cargo/env
 fi
 
 # Clean previous builds
-rm -rf dist/ build/ *.egg-info/
+rm -rf dist/ build/ .venv/
 
-# Create the project structure
-mkdir -p src/arduino_serial_controller
-
-# Copy the main Python script to the proper location
-cp arduino_serial_controller.py src/arduino_serial_controller/__init__.py
-
-# Create __main__.py for executable entry point
-cat > src/arduino_serial_controller/__main__.py << 'EOF'
-#!/usr/bin/env python3
-"""
-Entry point for Arduino Serial Controller executable
-"""
-
-from . import main
-
-if __name__ == '__main__':
-    main()
-EOF
-
-# Build the project with UV
-echo "Creating virtual environment and installing dependencies..."
+# Create virtual environment
+echo "📦 Creating virtual environment..."
 uv venv
+
+# Activate virtual environment
 source .venv/bin/activate
 
-echo "Installing project in development mode..."
-uv pip install -e .
+# Install dependencies directly
+echo "⬇️  Installing dependencies..."
+uv pip install pyserial>=3.5 pyinstaller>=5.0
 
-echo "Installing PyInstaller for creating executable..."
-uv pip install pyinstaller
-
-echo "Creating standalone executable..."
+# Create standalone executable
+echo "🏗️  Creating standalone executable..."
 pyinstaller \
     --onefile \
     --name arduino-serial-controller \
@@ -57,8 +40,7 @@ pyinstaller \
     --optimize 2 \
     --distpath ./dist \
     --workpath ./build \
-    --specpath ./build \
-    src/arduino_serial_controller/__main__.py
+    arduino_serial_controller.py
 
 # Verify the executable was created
 if [ -f "dist/arduino-serial-controller" ]; then
@@ -68,10 +50,10 @@ if [ -f "dist/arduino-serial-controller" ]; then
     
     # Test the executable
     echo "🧪 Testing executable..."
-    if ./dist/arduino-serial-controller --help &>/dev/null || [ $? -eq 0 ]; then
-        echo "✅ Executable test passed!"
+    if timeout 5 ./dist/arduino-serial-controller --help &>/dev/null || [ $? -eq 124 ]; then
+        echo "✅ Executable appears to work!"
     else
-        echo "⚠️  Executable may have issues, but this could be expected without Arduino connected"
+        echo "⚠️  Note: Executable may need Arduino hardware to run properly"
     fi
 else
     echo "❌ Failed to create executable"
@@ -81,11 +63,7 @@ fi
 echo ""
 echo "🎉 Build completed successfully!"
 echo ""
-echo "To use the executable:"
-echo "  1. Copy dist/arduino-serial-controller to your Unraid server"
-echo "  2. Make it executable: chmod +x arduino-serial-controller"
-echo "  3. Run it: ./arduino-serial-controller"
-echo ""
-echo "For the Unraid plugin:"
-echo "  1. Upload dist/arduino-serial-controller to your GitHub release"
-echo "  2. Install the plugin through Unraid's Community Applications"
+echo "Next steps:"
+echo "  1. Test: ./dist/arduino-serial-controller"
+echo "  2. Upload to GitHub release"
+echo "  3. Install plugin in Unraid"

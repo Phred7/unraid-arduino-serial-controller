@@ -1,0 +1,221 @@
+<?php
+/* Arduino Serial Controller Web Interface */
+$plugin = "arduino-serial-controller";
+$settings_file = "/boot/config/plugins/$plugin/settings.cfg";
+$log_file = "/var/log/arduino-serial-controller/arduino_controller.log";
+
+// Load current settings
+function load_settings($file) {
+    $settings = [
+        'serial_port' => '/dev/ttyUSB0',
+        'baud_rate' => '9600',
+        'update_interval' => '30',
+        'timeout' => '5',
+        'log_level' => 'INFO',
+        'retry_attempts' => '3',
+        'retry_delay' => '5'
+    ];
+    
+    if (file_exists($file)) {
+        $lines = file($file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+        foreach ($lines as $line) {
+            if (strpos($line, '=') !== false && !str_starts_with(trim($line), '#')) {
+                list($key, $value) = explode('=', $line, 2);
+                $settings[trim($key)] = trim($value);
+            }
+        }
+    }
+    
+    return $settings;
+}
+
+// Save settings
+if ($_POST['action'] == 'save') {
+    $config_dir = dirname($settings_file);
+    if (!is_dir($config_dir)) {
+        mkdir($config_dir, 0755, true);
+    }
+    
+    $content = "# Arduino Serial Controller Configuration\n";
+    $content .= "# Generated on " . date('Y-m-d H:i:s') . "\n\n";
+    $content .= "serial_port=" . $_POST['serial_port'] . "\n";
+    $content .= "baud_rate=" . $_POST['baud_rate'] . "\n";
+    $content .= "update_interval=" . $_POST['update_interval'] . "\n";
+    $content .= "timeout=" . $_POST['timeout'] . "\n";
+    $content .= "log_level=" . $_POST['log_level'] . "\n";
+    $content .= "retry_attempts=" . $_POST['retry_attempts'] . "\n";
+    $content .= "retry_delay=" . $_POST['retry_delay'] . "\n";
+    
+    file_put_contents($settings_file, $content);
+    
+    // Restart service to apply new settings
+    shell_exec("/etc/rc.d/rc.arduino-serial-controller restart");
+    
+    $message = "Settings saved and service restarted successfully!";
+}
+
+$settings = load_settings($settings_file);
+
+// Get service status
+$status_output = shell_exec("/etc/rc.d/rc.arduino-serial-controller status 2>&1");
+$service_running = strpos($status_output, 'is running') !== false;
+
+// Get recent log entries
+$log_entries = [];
+if (file_exists($log_file)) {
+    $log_entries = array_slice(file($log_file, FILE_IGNORE_NEW_LINES), -20);
+}
+?>
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Arduino Serial Controller</title>
+    <style>
+        .container { max-width: 1000px; margin: 20px auto; padding: 20px; }
+        .status-panel { background: #f5f5f5; padding: 15px; margin: 15px 0; border-radius: 5px; }
+        .status-running { background: #d4edda; border: 1px solid #c3e6cb; }
+        .status-stopped { background: #f8d7da; border: 1px solid #f5c6cb; }
+        .form-group { margin: 15px 0; }
+        .form-group label { display: inline-block; width: 150px; font-weight: bold; }
+        .form-group input, .form-group select { width: 200px; padding: 5px; }
+        .button { padding: 10px 20px; margin: 5px; background: #007cba; color: white; border: none; border-radius: 3px; cursor: pointer; }
+        .button:hover { background: #005a87; }
+        .log-panel { background: #1e1e1e; color: #fff; padding: 15px; border-radius: 5px; font-family: monospace; height: 300px; overflow-y: scroll; }
+        .message { background: #d4edda; color: #155724; padding: 10px; border-radius: 5px; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Arduino Serial Controller</h1>
+        
+        <?php if (!empty($message)): ?>
+            <div class="message"><?= htmlspecialchars($message) ?></div>
+        <?php endif; ?>
+        
+        <!-- Service Status -->
+        <div class="status-panel <?= $service_running ? 'status-running' : 'status-stopped' ?>">
+            <h3>Service Status</h3>
+            <p><strong>Status:</strong> <?= $service_running ? 'Running' : 'Stopped' ?></p>
+            <p><strong>Details:</strong> <?= htmlspecialchars($status_output) ?></p>
+            
+            <button class="button" onclick="serviceAction('start')">Start Service</button>
+            <button class="button" onclick="serviceAction('stop')">Stop Service</button>
+            <button class="button" onclick="serviceAction('restart')">Restart Service</button>
+        </div>
+        
+        <!-- Configuration -->
+        <div class="status-panel">
+            <h3>Configuration</h3>
+            <form method="post">
+                <input type="hidden" name="action" value="save">
+                
+                <div class="form-group">
+                    <label for="serial_port">Serial Port:</label>
+                    <input type="text" name="serial_port" value="<?= htmlspecialchars($settings['serial_port']) ?>" placeholder="/dev/ttyUSB0">
+                    <small>Arduino serial port (e.g., /dev/ttyUSB0, /dev/ttyACM0)</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="baud_rate">Baud Rate:</label>
+                    <select name="baud_rate">
+                        <option value="9600" <?= $settings['baud_rate'] == '9600' ? 'selected' : '' ?>>9600</option>
+                        <option value="19200" <?= $settings['baud_rate'] == '19200' ? 'selected' : '' ?>>19200</option>
+                        <option value="38400" <?= $settings['baud_rate'] == '38400' ? 'selected' : '' ?>>38400</option>
+                        <option value="57600" <?= $settings['baud_rate'] == '57600' ? 'selected' : '' ?>>57600</option>
+                        <option value="115200" <?= $settings['baud_rate'] == '115200' ? 'selected' : '' ?>>115200</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="update_interval">Update Interval (sec):</label>
+                    <input type="number" name="update_interval" value="<?= htmlspecialchars($settings['update_interval']) ?>" min="5" max="300">
+                    <small>How often to send status updates to Arduino</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="timeout">Timeout (sec):</label>
+                    <input type="number" name="timeout" value="<?= htmlspecialchars($settings['timeout']) ?>" min="1" max="30">
+                    <small>Serial communication timeout</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="log_level">Log Level:</label>
+                    <select name="log_level">
+                        <option value="DEBUG" <?= $settings['log_level'] == 'DEBUG' ? 'selected' : '' ?>>DEBUG</option>
+                        <option value="INFO" <?= $settings['log_level'] == 'INFO' ? 'selected' : '' ?>>INFO</option>
+                        <option value="WARNING" <?= $settings['log_level'] == 'WARNING' ? 'selected' : '' ?>>WARNING</option>
+                        <option value="ERROR" <?= $settings['log_level'] == 'ERROR' ? 'selected' : '' ?>>ERROR</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="retry_attempts">Retry Attempts:</label>
+                    <input type="number" name="retry_attempts" value="<?= htmlspecialchars($settings['retry_attempts']) ?>" min="1" max="10">
+                    <small>Connection retry attempts</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="retry_delay">Retry Delay (sec):</label>
+                    <input type="number" name="retry_delay" value="<?= htmlspecialchars($settings['retry_delay']) ?>" min="1" max="30">
+                    <small>Delay between retry attempts</small>
+                </div>
+                
+                <button type="submit" class="button">Save Configuration</button>
+            </form>
+        </div>
+        
+        <!-- Log Viewer -->
+        <div class="status-panel">
+            <h3>Recent Log Entries</h3>
+            <div class="log-panel" id="logPanel">
+                <?php foreach ($log_entries as $entry): ?>
+                    <div><?= htmlspecialchars($entry) ?></div>
+                <?php endforeach; ?>
+            </div>
+            <button class="button" onclick="refreshLogs()">Refresh Logs</button>
+        </div>
+        
+        <!-- Arduino Message Format Documentation -->
+        <div class="status-panel">
+            <h3>Arduino Message Format</h3>
+            <p>The plugin sends JSON messages to the Arduino with the following format:</p>
+            <pre><code>{
+  "type": "message_type",
+  "timestamp": "ISO_timestamp",
+  "data": {
+    // Message-specific data
+  }
+}</code></pre>
+            
+            <h4>Message Types:</h4>
+            <ul>
+                <li><strong>system_startup</strong> - Sent when plugin starts</li>
+                <li><strong>status_update</strong> - Periodic status (CPU temp, time, etc.)</li>
+                <li><strong>system_shutdown</strong> - Sent when system is shutting down</li>
+                <li><strong>array_status_change</strong> - Sent when array starts/stops</li>
+            </ul>
+        </div>
+    </div>
+    
+    <script>
+        function serviceAction(action) {
+            fetch(window.location.href, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                body: 'service_action=' + action
+            }).then(() => {
+                setTimeout(() => location.reload(), 2000);
+            });
+        }
+        
+        function refreshLogs() {
+            location.reload();
+        }
+        
+        // Auto-refresh page every 30 seconds if service is running
+        <?php if ($service_running): ?>
+        setTimeout(() => location.reload(), 30000);
+        <?php endif; ?>
+    </script>
+</body>
