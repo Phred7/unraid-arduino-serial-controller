@@ -17,7 +17,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
-        python-version: '3.12'
+        python-version: '3.11'
         
     - name: Install UV
       run: |
@@ -68,12 +68,18 @@ jobs:
         
     - name: Create plugin package
       run: |
+        # Get current date for filename
+        DATE=$(date +%Y.%m.%d)
+        
         # Create a minimal txz package (even if empty, the plugin expects it)
         mkdir -p package/usr/local/emhttp/plugins/arduino-serial-controller
         echo "# Arduino Serial Controller Plugin Package" > package/usr/local/emhttp/plugins/arduino-serial-controller/README
         cd package
-        tar -cJf ../arduino-serial-controller-$(date +%Y.%m.%d).txz .
+        tar -cJf ../arduino-serial-controller-$DATE.txz .
         cd ..
+        
+        # Store the filename for later use
+        echo "PACKAGE_FILE=arduino-serial-controller-$DATE.txz" >> $GITHUB_ENV
         
     - name: Get tag name
       id: tag
@@ -142,6 +148,6 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./arduino-serial-controller-$(date +%Y.%m.%d).txz
-        asset_name: arduino-serial-controller-$(date +%Y.%m.%d).txz
+        asset_path: ./${{ env.PACKAGE_FILE }}
+        asset_name: ${{ env.PACKAGE_FILE }}
         asset_content_type: application/x-xz
