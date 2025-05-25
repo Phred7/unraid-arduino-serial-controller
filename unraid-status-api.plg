@@ -1,0 +1,20 @@
+<?xml version='1.0' standalone='yes'?>
+<!DOCTYPE PLUGIN [
+  <!ENTITY name      "unraid-status-api">
+  <!ENTITY author    "phred7">
+  <!ENTITY version   "2025.03.15">
+  <!ENTITY gitURL    "https://github.com/&author;/&name;/releases/download">
+  <!ENTITY pluginURL "https://raw.githubusercontent.com/&author;/&name;/main/&name;.plg">
+  <!ENTITY md5       "2afdff3922af9f8e92bd0f435242f100">
+  <!ENTITY plugin    "/boot/config/plugins/&name;">
+  <!ENTITY emhttp    "/usr/local/emhttp/plugins/&name;">
+]>
+
+<PLUGIN  name="&name;" author="&author;" version="&version;" pluginURL="&pluginURL;" min="6.10.0">
+
+<CHANGES>
+
+###2025.05.25
+- Initial release
+
+</CHANGES>
