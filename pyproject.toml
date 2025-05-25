@@ -1,0 +1,16 @@
+[project]
+name = "arduino-serial-controller"
+version = "2025.05.25"
+description = "Arduino Serial Controller for Unraid"
+authors = [
+    {name = "phred7"}
+]
+readme = "README.md"
+requires-python = ">=3.12.10"
+dependencies = [
+    "pyinstaller>=6.13.0",
+    "pyserial>=3.5",
+]
+
+[project.scripts]
+arduino-serial-controller = "arduino_serial_controller:main"

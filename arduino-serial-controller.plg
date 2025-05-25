@@ -2,88 +2,96 @@
 <!DOCTYPE PLUGIN [
   <!ENTITY name      "arduino-serial-controller">
   <!ENTITY author    "phred7">
-  <!ENTITY version   "2025.03.15">
-  <!ENTITY gitURL    "https://github.com/&author;/unraid-&name;/main">
-  <!ENTITY pluginURL "https://raw.githubusercontent.com/&author;/unraid-&name;/main/&name;.plg">
-  <!ENTITY plugin    "/boot/config/plugins/&name;">
-  <!ENTITY plgPATH   "/boot/config/plugins/&name;">
-  <!ENTITY plgNAME   "&name;-&version;">
-  <!ENTITY pkgURL    "&gitURL;/pkg">
-  <!ENTITY emhttp    "/usr/local/emhttp/plugins/&name;">
-  <!ENTITY launch    "Settings/TODO">
+  <!ENTITY version   "2025.05.25">
+  <!ENTITY launch    "Settings/ArduinoSerialController">
+  <!ENTITY gitURL    "https://github.com/&author;/unraid-arduino-serial-controller">
+  <!ENTITY pluginURL "&gitURL;/raw/main/arduino-serial-controller.plg">
 ]>
 
-<PLUGIN
-    name="&name;"
-    author="&author;"
-    version="&version;"
-    pluginURL="&pluginURL;"
-    min="1.0.0"
-    launch="&launch;">
+<PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;" min="6.8.0">
 
 <CHANGES>
-
 ###2025.05.25
 - Initial release
-
+- Arduino serial communication with CPU temperature and time
+- System shutdown notification
+- Array start/stop notifications
+- Extensible architecture for additional features
 </CHANGES>
 
-<!-- The 'pre-install' script. -->
+<!--
+Arduino Serial Controller for Unraid
+This plugin communicates with an Arduino microcontroller via serial connection.
+It sends system status information and notifications.
+-->
+
 <FILE Run="/bin/bash">
 <INLINE>
-rm -f $(ls /boot/config/plugins/&name;/arduino.serial.controller-*.txz 2>/dev/null|grep -v '&version;')
+# Remove old plugin files
+rm -f $(ls /boot/config/plugins/&name;/&name;*.txz 2>/dev/null | grep -v '&version;')
 </INLINE>
 </FILE>
 
-<!-- The 'source' file. -->
-<FILE Name="&plgPATH;/&plgNAME;.txz" Min="6.4" Run="upgradepkg --install-new">
- <URL>&pkgURL;/&plgNAME;.txz</URL>
+<!--
+Download and install the compiled executable
+-->
+<FILE Name="/usr/local/bin/arduino-serial-controller" Run="chmod +x">
+<URL>&gitURL;/releases/download/&version;/arduino-serial-controller</URL>
 </FILE>
 
-<FILE Name="&emhttp;/README.md">
-<INLINE>
-**arduino serial controller**
+<!--
+Copy plugin files
+-->
+<FILE Name="/boot/config/plugins/&name;/&name;-&version;.txz" Run="upgradepkg --install-new">
+<URL>&gitURL;/releases/download/&version;/&name;-&version;.txz</URL>
+</FILE>
 
-This plugin adds the tool 'arduino_serial_controller' to your unRAID server.
+<!--
+Post-install script
+-->
+<FILE Run="/bin/bash">
+<INLINE>
+# Create plugin directory structure
+mkdir -p /usr/local/emhttp/plugins/&name;
+mkdir -p /var/log/&name;
+
+# Set permissions
+chmod +x /usr/local/bin/arduino-serial-controller
+chmod +x /etc/rc.d/rc.arduino-serial-controller
+
+# Start the service
+/etc/rc.d/rc.arduino-serial-controller start
+
+echo ""
+echo "----------------------------------------------------"
+echo " &name; has been installed."
+echo " Version: &version;"
+echo " Copyright 2025, &author;"
+echo "----------------------------------------------------"
+echo ""
 </INLINE>
 </FILE>
 
-
-<!-- The 'install' script. -->
-<FILE Run="/bin/bash">
-<INLINE>
-
-echo
-echo "----Installation of arduino serial controller complete-----"
-
-</INLINE>
-</FILE>
-
-<!-- Remove the install files. -->
-<FILE Run="/bin/bash">
- <INLINE>
-  rm -f $(ls &plgPATH;/&name;*.txz 2>/dev/null|grep -v '&version;')
- </INLINE>
-</FILE>
-
-
-<!-- The 'uninstall' script. -->
+<!--
+Remove script
+-->
 <FILE Run="/bin/bash" Method="remove">
 <INLINE>
+# Stop the service
+/etc/rc.d/rc.arduino-serial-controller stop 2>/dev/null
 
-echo "---------------------------------------------------"
-echo "----------Uninstalling arduino serial controller-----------"
-echo "---------------------------------------------------"
-# Remove plugin related files
-removepkg arduino.serial.controller-&version;
+# Remove plugin files
 rm -rf /usr/local/emhttp/plugins/&name;
-rm -rf &plugin;
-echo
-echo "---------------------------------------------------"
-echo "------Uninstall of arduino serial controller complete!-----"
-echo "---------------------------------------------------"
-echo
+rm -f /usr/local/bin/arduino-serial-controller
+rm -f /etc/rc.d/rc.arduino-serial-controller
+rm -rf /var/log/&name;
 
+echo ""
+echo "----------------------------------------------------"
+echo " &name; has been removed."
+echo "----------------------------------------------------"
+echo ""
 </INLINE>
 </FILE>
+
 </PLUGIN>
