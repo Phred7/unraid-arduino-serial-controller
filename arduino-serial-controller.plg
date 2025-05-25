@@ -1,0 +1,89 @@
+<?xml version='1.0' standalone='yes'?>
+<!DOCTYPE PLUGIN [
+  <!ENTITY name      "arduino-serial-controller">
+  <!ENTITY author    "phred7">
+  <!ENTITY version   "2025.03.15">
+  <!ENTITY gitURL    "https://github.com/&author;/unraid-&name;/main">
+  <!ENTITY pluginURL "https://raw.githubusercontent.com/&author;/unraid-&name;/main/&name;.plg">
+  <!ENTITY plugin    "/boot/config/plugins/&name;">
+  <!ENTITY plgPATH   "/boot/config/plugins/&name;">
+  <!ENTITY plgNAME   "&name;-&version;">
+  <!ENTITY pkgURL    "&gitURL;/pkg">
+  <!ENTITY emhttp    "/usr/local/emhttp/plugins/&name;">
+  <!ENTITY launch    "Settings/TODO">
+]>
+
+<PLUGIN
+    name="&name;"
+    author="&author;"
+    version="&version;"
+    pluginURL="&pluginURL;"
+    min="1.0.0"
+    launch="&launch;">
+
+<CHANGES>
+
+###2025.05.25
+- Initial release
+
+</CHANGES>
+
+<!-- The 'pre-install' script. -->
+<FILE Run="/bin/bash">
+<INLINE>
+rm -f $(ls /boot/config/plugins/&name;/arduino.serial.controller-*.txz 2>/dev/null|grep -v '&version;')
+</INLINE>
+</FILE>
+
+<!-- The 'source' file. -->
+<FILE Name="&plgPATH;/&plgNAME;.txz" Min="6.4" Run="upgradepkg --install-new">
+ <URL>&pkgURL;/&plgNAME;.txz</URL>
+</FILE>
+
+<FILE Name="&emhttp;/README.md">
+<INLINE>
+**arduino serial controller**
+
+This plugin adds the tool 'arduino_serial_controller' to your unRAID server.
+</INLINE>
+</FILE>
+
+
+<!-- The 'install' script. -->
+<FILE Run="/bin/bash">
+<INLINE>
+
+echo
+echo "----Installation of arduino serial controller complete-----"
+
+</INLINE>
+</FILE>
+
+<!-- Remove the install files. -->
+<FILE Run="/bin/bash">
+ <INLINE>
+  rm -f $(ls &plgPATH;/&name;*.txz 2>/dev/null|grep -v '&version;')
+ </INLINE>
+</FILE>
+
+
+<!-- The 'uninstall' script. -->
+<FILE Run="/bin/bash" Method="remove">
+<INLINE>
+
+echo "---------------------------------------------------"
+echo "----------Uninstalling arduino serial controller-----------"
+echo "---------------------------------------------------"
+# Remove plugin related files
+removepkg arduino.serial.controller-&version;
+rm -rf /usr/local/emhttp/plugins/&name;
+rm -rf &plugin;
+echo
+echo "---------------------------------------------------"
+echo "------Uninstall of arduino serial controller complete!-----"
+echo "---------------------------------------------------"
+echo
+
+</INLINE>
+</FILE>
+</PLUGIN>
