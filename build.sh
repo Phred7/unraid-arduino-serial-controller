@@ -22,12 +22,28 @@ rm -rf dist/ build/ .venv/
 echo "📦 Creating virtual environment..."
 uv venv
 
-# Activate virtual environment
-source .venv/bin/activate
+# Create virtual environment
+echo "📦 Creating virtual environment..."
+uv venv
+
+# Detect and activate virtual environment (cross-platform)
+echo "🔍 Activating virtual environment..."
+if [[ -f ".venv/Scripts/activate" ]]; then
+    echo "🪟 Using Windows activation path"
+    source .venv/Scripts/activate
+elif [[ -f ".venv/bin/activate" ]]; then
+    echo "🐧 Using Unix activation path"
+    source .venv/bin/activate
+else
+    echo "❌ Could not find virtual environment activation script"
+    echo "Expected either .venv/Scripts/activate or .venv/bin/activate"
+    ls -la .venv/
+    exit 1
+fi
 
 # Install dependencies directly
 echo "⬇️  Installing dependencies..."
-uv pip install pyserial>=3.5 pyinstaller>=5.0
+uv pip install "pyserial>=3.5" "pyinstaller>=5.0"
 
 # Create standalone executable
 echo "🏗️  Creating standalone executable..."
@@ -59,6 +75,8 @@ else
     echo "❌ Failed to create executable"
     exit 1
 fi
+
+./build_verify.sh
 
 echo ""
 echo "🎉 Build completed successfully!"
