@@ -69,7 +69,7 @@ jobs:
     - name: Create plugin package
       run: |
         # Use the version from the git tag
-        VERSION="${{ steps.tag.outputs.version }}"
+        VERSION="${{ steps.tag }}"
         echo "Using version: $VERSION"
         
         # Create a minimal txz package (even if empty, the plugin expects it)
