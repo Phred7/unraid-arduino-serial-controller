@@ -245,4 +245,5 @@ This project is open source. Feel free to modify and distribute according to you
 - line endings matter! they must be for unix. use `dos2unix` to convert. Set `git config --global core.autocrlf input` to fix on push
 - releases: `https://github.com/Phred7/unraid-arduino-serial-controller/releases`
 - use the dev console's network tab for debugging settings
--  
+- example plugin (gpustat): `https://github.com/b3rs3rk/gpustat-unraid/tree/dev`
+- example plugin (intel-gpu-top): `https://github.com/ich777/intel-gpu-top/tree/master`
