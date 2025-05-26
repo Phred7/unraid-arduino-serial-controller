@@ -135,7 +135,7 @@ unraid-arduino-serial-controller/
 ├── arduino-serial-controller.plg     # Unraid plugin definition
 ├── arduino_serial_controller.py      # Main Python application
 ├── rc.arduino-serial-controller      # Service control script
-├── ArduinoSerialController.page      # Web interface
+├── ArduinoSerialControllerSettings.page      # Web interface
 ├── pyproject.toml                    # Python project configuration
 ├── build.sh                          # Build script
 ├── .github/workflows/                # GitHub Actions

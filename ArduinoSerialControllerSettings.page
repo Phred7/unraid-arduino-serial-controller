@@ -1,3 +1,8 @@
+Menu="Utilities"
+Icon="arduino-serial-controller.png"
+Title="Arduino Serial Controller"
+---
+
 <?php
 /* Arduino Serial Controller Web Interface */
 $plugin = "arduino-serial-controller";

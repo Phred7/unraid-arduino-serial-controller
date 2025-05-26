@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
   <!ENTITY name      "arduino-serial-controller">
   <!ENTITY author    "phred7">
-  <!ENTITY version   "2025.05.25o">
-  <!ENTITY launch    "Settings/ArduinoSerialController">
+  <!ENTITY version   "2025.05.25p">
+  <!ENTITY launch    "Settings/ArduinoSerialControllerSettings">
   <!ENTITY gitURL    "https://github.com/&author;/unraid-arduino-serial-controller">
   <!ENTITY pluginURL "&gitURL;/raw/main/arduino-serial-controller.plg">
 ]>
@@ -11,6 +11,9 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;" min="6.12.0">
 
 <CHANGES>
+
+###2025.05.25p
+fix settings page
 
 ###2025.05.25o
 docker build
@@ -97,8 +100,8 @@ Download and install the service script
 <!--
 Download and install the web interface
 -->
-<FILE Name="/usr/local/emhttp/plugins/&name;/ArduinoSerialController.page">
-<URL>&gitURL;/raw/main/ArduinoSerialController.page</URL>
+<FILE Name="/usr/local/emhttp/plugins/&name;/ArduinoSerialControllerSettings.page">
+<URL>&gitURL;/raw/main/ArduinoSerialControllerSettings.page</URL>
 </FILE>
 
 <!--

@@ -68,7 +68,7 @@ Create `rc.arduino-serial-controller` with the service control script (use the a
 
 ### 2.4 Create the Web Interface
 
-Create `ArduinoSerialController.page` with the web interface (use the artifact above).
+Create `ArduinoSerialControllerSettings.page` with the web interface (use the artifact above).
 
 ### 2.5 Create Build Configuration
 
