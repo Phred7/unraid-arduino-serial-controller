@@ -2,7 +2,7 @@
 <!DOCTYPE PLUGIN [
   <!ENTITY name      "arduino-serial-controller">
   <!ENTITY author    "phred7">
-  <!ENTITY version   "2025.05.25m">
+  <!ENTITY version   "2025.05.25n">
   <!ENTITY launch    "Settings/ArduinoSerialController">
   <!ENTITY gitURL    "https://github.com/&author;/unraid-arduino-serial-controller">
   <!ENTITY pluginURL "&gitURL;/raw/main/arduino-serial-controller.plg">
@@ -12,8 +12,11 @@
 
 <CHANGES>
 
+###2025.05.25
+docker build
+
 ###2025.05.25m
-glibc compatibility
+docker build
 
 ###2025.05.25l
 glibc compatibility
