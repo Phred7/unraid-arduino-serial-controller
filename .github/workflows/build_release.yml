@@ -8,7 +8,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-20.04  # Use older Ubuntu for GLIBC compatibility
+    runs-on: ubuntu-latest
     
     steps:
     - name: Checkout code
@@ -45,9 +45,9 @@ jobs:
         
         # Install project and PyInstaller
         uv pip install -e .
-        uv pip install pyinstaller
+        uv pip install pyinstaller staticx patchelf
         
-        # Create executable
+        # Create executable with maximum compatibility
         pyinstaller \
           --onefile \
           --name arduino-serial-controller \
@@ -58,7 +58,13 @@ jobs:
           --distpath ./dist \
           --workpath ./build \
           --specpath ./build \
-          src/arduino_serial_controller/__main__.py
+          --add-data "README.md:." \
+          arduino_serial_controller.py
+          
+        # Make it even more portable with staticx (bundles all libraries)
+        staticx dist/arduino-serial-controller dist/arduino-serial-controller-static
+        mv dist/arduino-serial-controller-static dist/arduino-serial-controller
+        chmod +x dist/arduino-serial-controller
           
     - name: Test executable
       run: |
