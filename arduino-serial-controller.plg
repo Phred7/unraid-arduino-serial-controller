@@ -11,6 +11,13 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;" min="6.8.0">
 
 <CHANGES>
+
+###2025.05.25b
+fix workflow .txz creation
+
+###2025.05.25a
+debug workflows and build
+
 ###2025.05.25
 - Initial release
 - Arduino serial communication with CPU temperature and time
