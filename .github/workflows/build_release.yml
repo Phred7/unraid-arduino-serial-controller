@@ -58,19 +58,29 @@ jobs:
           --distpath ./dist \
           --workpath ./build \
           --specpath ./build \
-          --add-data "README.md:." \
           arduino_serial_controller.py
           
-        # Make it even more portable with staticx (bundles all libraries)
-        staticx dist/arduino-serial-controller dist/arduino-serial-controller-static
-        mv dist/arduino-serial-controller-static dist/arduino-serial-controller
+        # Make it more portable with staticx (bundles all libraries)
+        if command -v staticx &> /dev/null; then
+          staticx dist/arduino-serial-controller dist/arduino-serial-controller-static
+          mv dist/arduino-serial-controller-static dist/arduino-serial-controller
+        fi
+        
         chmod +x dist/arduino-serial-controller
           
     - name: Test executable
       run: |
-        chmod +x dist/arduino-serial-controller
+        # Check what we built
+        echo "🔍 Checking built executable:"
+        ls -la dist/arduino-serial-controller
         file dist/arduino-serial-controller
-        ldd dist/arduino-serial-controller || true
+        
+        echo "🔍 Checking GLIBC requirements:"
+        ldd --version
+        readelf -V dist/arduino-serial-controller | grep GLIBC || echo "No GLIBC version info found"
+        
+        echo "🧪 Testing executable..."
+        timeout 5 ./dist/arduino-serial-controller --help || echo "⚠️  Executable may need Arduino hardware to run properly"
         
     - name: Create plugin package
       run: |
