@@ -2,7 +2,7 @@
 <!DOCTYPE PLUGIN [
   <!ENTITY name      "arduino-serial-controller">
   <!ENTITY author    "phred7">
-  <!ENTITY version   "2025.05.25g">
+  <!ENTITY version   "2025.05.25h">
   <!ENTITY launch    "Settings/ArduinoSerialController">
   <!ENTITY gitURL    "https://github.com/&author;/unraid-arduino-serial-controller">
   <!ENTITY pluginURL "&gitURL;/raw/main/arduino-serial-controller.plg">
@@ -11,6 +11,9 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;" min="6.12.0">
 
 <CHANGES>
+
+###2025.05.25h
+fix settings page
 
 ###2025.05.25g
 fix workflow .txz creation
@@ -62,6 +65,27 @@ Download and install the compiled executable
 </FILE>
 
 <!--
+Download and install the service script
+-->
+<FILE Name="/etc/rc.d/rc.arduino-serial-controller" Run="chmod +x">
+<URL>&gitURL;/raw/main/rc.arduino-serial-controller</URL>
+</FILE>
+
+<!--
+Download and install the web interface
+-->
+<FILE Name="/usr/local/emhttp/plugins/&name;/ArduinoSerialController.page">
+<URL>&gitURL;/raw/main/ArduinoSerialController.page</URL>
+</FILE>
+
+<!--
+Download and install the plugin icon
+-->
+<FILE Name="/usr/local/emhttp/plugins/&name;/images/&name;.png">
+<URL>&gitURL;/raw/main/arduino-serial-controller.png</URL>
+</FILE>
+
+<!--
 Copy plugin files
 -->
 <FILE Name="/boot/config/plugins/&name;/&name;-&version;.txz" Run="upgradepkg --install-new">
@@ -74,7 +98,7 @@ Post-install script
 <FILE Run="/bin/bash">
 <INLINE>
 # Create plugin directory structure
-mkdir -p /usr/local/emhttp/plugins/&name;
+mkdir -p /usr/local/emhttp/plugins/&name;/images
 mkdir -p /var/log/&name;
 
 # Set permissions
