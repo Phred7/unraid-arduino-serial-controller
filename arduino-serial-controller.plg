@@ -2,7 +2,7 @@
 <!DOCTYPE PLUGIN [
   <!ENTITY name      "arduino-serial-controller">
   <!ENTITY author    "phred7">
-  <!ENTITY version   "2025.05.25n">
+  <!ENTITY version   "2025.05.25o">
   <!ENTITY launch    "Settings/ArduinoSerialController">
   <!ENTITY gitURL    "https://github.com/&author;/unraid-arduino-serial-controller">
   <!ENTITY pluginURL "&gitURL;/raw/main/arduino-serial-controller.plg">
@@ -12,7 +12,10 @@
 
 <CHANGES>
 
-###2025.05.25
+###2025.05.25o
+docker build
+
+###2025.05.25n
 docker build
 
 ###2025.05.25m

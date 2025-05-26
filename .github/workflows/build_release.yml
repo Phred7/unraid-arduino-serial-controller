@@ -51,7 +51,7 @@ jobs:
         
         # Install UV
         curl -LsSf https://astral.sh/uv/install.sh | sh
-        source $HOME/.cargo/env
+        source $HOME/.local/bin/env
         
         # Install dependencies
         uv venv
