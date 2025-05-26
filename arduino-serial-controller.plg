@@ -2,7 +2,7 @@
 <!DOCTYPE PLUGIN [
   <!ENTITY name      "arduino-serial-controller">
   <!ENTITY author    "phred7">
-  <!ENTITY version   "2025.05.25f">
+  <!ENTITY version   "2025.05.25g">
   <!ENTITY launch    "Settings/ArduinoSerialController">
   <!ENTITY gitURL    "https://github.com/&author;/unraid-arduino-serial-controller">
   <!ENTITY pluginURL "&gitURL;/raw/main/arduino-serial-controller.plg">
@@ -11,6 +11,9 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;" min="6.12.0">
 
 <CHANGES>
+
+###2025.05.25g
+fix workflow .txz creation
 
 ###2025.05.25f
 fix workflow .txz creation
@@ -55,14 +58,14 @@ rm -f $(ls /boot/config/plugins/&name;/&name;*.txz 2>/dev/null | grep -v '&versi
 Download and install the compiled executable
 -->
 <FILE Name="/usr/local/bin/arduino-serial-controller" Run="chmod +x">
-<URL>&gitURL;/releases/download/&version;/arduino-serial-controller</URL>
+<URL>&gitURL;/releases/download/v&version;/arduino-serial-controller</URL>
 </FILE>
 
 <!--
 Copy plugin files
 -->
 <FILE Name="/boot/config/plugins/&name;/&name;-&version;.txz" Run="upgradepkg --install-new">
-<URL>&gitURL;/releases/download/&version;/&name;-&version;.txz</URL>
+<URL>&gitURL;/releases/download/v&version;/&name;-&version;.txz</URL>
 </FILE>
 
 <!--
