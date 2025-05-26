@@ -231,3 +231,18 @@ This project is open source. Feel free to modify and distribute according to you
 ---
 
 **Made with ❤️ for the Unraid community**
+
+# Notes
+
+- Python executable must be built with Linux!
+- Plugin must be built (./build.sh) with a version of GLIBC that's the same or older than Unraid. Check with ldd --version
+- Start WSL: `wsl.exe -d Ubuntu-22.04`
+- wsl windows bashrc `source /mnt/c/Users/wward/.bashrc`
+- Helpful git command: `gaa && gcm 'msg' && gp && git tag v2025.05.26 && git push origin v2025.05.26`
+- .plg version must match the tag to get the package to build
+- plugin url for installation: `https://github.com/phred7/unraid-arduino-serial-controller/releases/latest/download/arduino-serial-controller.plg`
+- settings path `/boot/config/plugins/arduino-serial-controller/settings.cfg`
+- line endings matter! they must be for unix. use `dos2unix` to convert. Set `git config --global core.autocrlf input` to fix on push
+- releases: `https://github.com/Phred7/unraid-arduino-serial-controller/releases`
+- use the dev console's network tab for debugging settings
+-  

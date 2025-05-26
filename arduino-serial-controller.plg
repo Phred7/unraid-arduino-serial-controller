@@ -2,7 +2,7 @@
 <!DOCTYPE PLUGIN [
   <!ENTITY name      "arduino-serial-controller">
   <!ENTITY author    "phred7">
-  <!ENTITY version   "2025.05.26">
+  <!ENTITY version   "2025.05.26a">
   <!ENTITY launch    "Settings/ArduinoSerialControllerSettings">
   <!ENTITY gitURL    "https://github.com/&author;/unraid-arduino-serial-controller">
   <!ENTITY pluginURL "&gitURL;/raw/main/arduino-serial-controller.plg">
@@ -11,6 +11,9 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;" min="6.12.0">
 
 <CHANGES>
+
+###2025.05.26a
+- Add AJAX file to installation
 
 ###2025.05.26
 - Fix Settings page not loading
@@ -56,6 +59,13 @@ Download and install the web interface
 -->
 <FILE Name="/usr/local/emhttp/plugins/&name;/ArduinoSerialControllerSettings.page">
 <URL>&gitURL;/raw/main/ArduinoSerialControllerSettings.page</URL>
+</FILE>
+
+<!--
+Download and install the AJAX API
+-->
+<FILE Name="/usr/local/emhttp/plugins/&name;/ajax.php">
+<URL>&gitURL;/raw/main/ajax.php</URL>
 </FILE>
 
 <!--
