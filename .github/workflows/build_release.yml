@@ -68,9 +68,9 @@ jobs:
         
     - name: Create plugin package
       run: |
-        # Use the version from the git tag instead of current date
-        VERSION="${{ steps.tag.outputs.tag }}"
-        VERSION=${VERSION#v}  # Remove 'v' prefix if present
+        # Use the version from the git tag
+        VERSION="${{ steps.tag.outputs.version }}"
+        echo "Using version: $VERSION"
         
         # Create a minimal txz package (even if empty, the plugin expects it)
         mkdir -p package/usr/local/emhttp/plugins/arduino-serial-controller
@@ -86,10 +86,15 @@ jobs:
       id: tag
       run: |
         if [[ $GITHUB_REF == refs/tags/* ]]; then
-          echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          TAG=${GITHUB_REF#refs/tags/}
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "version=${TAG#v}" >> $GITHUB_OUTPUT
         else
-          echo "tag=v$(date +%Y.%m.%d)" >> $GITHUB_OUTPUT
+          TAG="v$(date +%Y.%m.%d)"
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "version=$(date +%Y.%m.%d)" >> $GITHUB_OUTPUT
         fi
+        echo "Detected tag: $TAG"
         
     - name: Create Release
       id: create_release
