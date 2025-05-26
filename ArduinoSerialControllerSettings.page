@@ -8,6 +8,42 @@ $plugin = "arduino-serial-controller";
 $settings_file = "/boot/config/plugins/$plugin/settings.cfg";
 $log_file = "/var/log/arduino-serial-controller/arduino_controller.log";
 
+// Handle form submission FIRST
+if ($_POST && isset($_POST['save_config'])) {
+    $serial_port = trim($_POST['serial_port']);
+    $baud_rate = trim($_POST['baud_rate']);
+    $update_interval = trim($_POST['update_interval']);
+    $timeout = trim($_POST['timeout']);
+    $log_level = trim($_POST['log_level']);
+    $retry_attempts = trim($_POST['retry_attempts']);
+    $retry_delay = trim($_POST['retry_delay']);
+
+    $config_dir = dirname($settings_file);
+    if (!is_dir($config_dir)) {
+        mkdir($config_dir, 0755, true);
+    }
+
+    $content = "# Arduino Serial Controller Configuration\n";
+    $content .= "# Generated on " . date('Y-m-d H:i:s') . "\n\n";
+    $content .= "serial_port=" . $serial_port . "\n";
+    $content .= "baud_rate=" . $baud_rate . "\n";
+    $content .= "update_interval=" . $update_interval . "\n";
+    $content .= "timeout=" . $timeout . "\n";
+    $content .= "log_level=" . $log_level . "\n";
+    $content .= "retry_attempts=" . $retry_attempts . "\n";
+    $content .= "retry_delay=" . $retry_delay . "\n";
+
+    $write_result = file_put_contents($settings_file, $content);
+    
+    if ($write_result !== false) {
+        $save_message = "✅ Settings saved successfully! Use the Restart Service button to apply changes.";
+        $save_success = true;
+    } else {
+        $save_message = "❌ Failed to save settings file.";
+        $save_success = false;
+    }
+}
+
 // Load current settings function
 function load_settings($file) {
     $settings = [
@@ -78,12 +114,20 @@ echo '<div class="container">';
 echo '<h1>Arduino Serial Controller</h1>';
 echo '<div id="message-area"></div>';
 
+// Show save message if we just saved
+if (isset($save_message)) {
+    echo '<div class="message ' . ($save_success ? 'success' : 'error') . '">';
+    echo $save_message;
+    echo '</div>';
+}
+
 echo '<div class="panel">';
 echo '<h2>Arduino Connection Status</h2>';
-if (file_exists('/dev/ttyACM1')) {
-    echo '<p style="color: #90ee90;">✅ Arduino port /dev/ttyACM1 exists</p>';
+$arduino_port = $settings['serial_port'];
+if (file_exists($arduino_port)) {
+    echo '<p style="color: #90ee90;">✅ Arduino port ' . htmlspecialchars($arduino_port) . ' exists</p>';
 } else {
-    echo '<p style="color: #ff6b6b;">❌ Arduino port /dev/ttyACM1 not found</p>';
+    echo '<p style="color: #ff6b6b;">❌ Arduino port ' . htmlspecialchars($arduino_port) . ' not found</p>';
 }
 echo '</div>';
 
@@ -96,14 +140,12 @@ echo '<button onclick="serviceAction(\'start\')" class="btn btn-success">Start S
 echo '<button onclick="serviceAction(\'stop\')" class="btn btn-danger">Stop Service</button>';
 echo '<button onclick="serviceAction(\'restart\')" class="btn btn-warning">Restart Service</button>';
 echo '<button onclick="serviceAction(\'status\')" class="btn btn-primary">Refresh Status</button>';
-echo '<button onclick="testAjax()" class="btn btn-primary">Test AJAX</button>';
-echo '<button onclick="debugSave()" class="btn btn-primary">Debug Save</button>';
 echo '</div>';
 echo '</div>';
 
 echo '<div class="panel">';
 echo '<h2>Configuration</h2>';
-echo '<form id="config-form">';
+echo '<form method="POST">';
 
 echo '<div class="form-group">';
 echo '<label for="serial_port">Serial Port:</label>';
@@ -155,7 +197,7 @@ echo '<input type="number" name="retry_delay" value="' . htmlspecialchars($setti
 echo '<br><small>Delay between retry attempts</small>';
 echo '</div>';
 
-echo '<button type="submit" class="btn btn-primary" id="save-btn">Save Configuration</button>';
+echo '<button type="submit" name="save_config" class="btn btn-primary">Save Configuration</button>';
 echo '</form>';
 echo '</div>';
 
@@ -191,7 +233,7 @@ echo '</div>';
 
 echo '</div>';
 
-// JavaScript for AJAX functionality
+// JavaScript for service functionality only (keeping what works from AJAX)
 echo '<script>
 function showMessage(text, type, duration = 5000) {
     const messageArea = document.getElementById("message-area");
@@ -201,40 +243,6 @@ function showMessage(text, type, duration = 5000) {
             messageArea.innerHTML = "";
         }, duration);
     }
-}
-
-function testAjax() {
-    showMessage("Testing AJAX connection...", "info");
-    fetch("/plugins/arduino-serial-controller/ajax.php?action=test")
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                showMessage("✅ AJAX Test: " + data.message, "success");
-                console.log("AJAX test details:", data);
-            } else {
-                showMessage("❌ AJAX Test Failed: " + data.message, "error");
-            }
-        })
-        .catch(error => {
-            showMessage("❌ AJAX Test Error: " + error, "error");
-        });
-}
-
-function debugSave() {
-    showMessage("Testing file write permissions...", "info");
-    fetch("/plugins/arduino-serial-controller/ajax.php?action=debug_save")
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                showMessage("✅ Debug Save: " + data.message, "success");
-            } else {
-                showMessage("❌ Debug Save Failed: " + data.message, "error");
-            }
-            console.log("Debug save details:", data);
-        })
-        .catch(error => {
-            showMessage("❌ Debug Save Error: " + error, "error");
-        });
 }
 
 function serviceAction(action) {
@@ -296,44 +304,6 @@ function refreshLogs() {
             showMessage("❌ Error refreshing logs: " + error, "error");
         });
 }
-
-document.getElementById("config-form").addEventListener("submit", function(e) {
-    e.preventDefault();
-    
-    const formData = new FormData(this);
-    const saveBtn = document.getElementById("save-btn");
-    const originalText = saveBtn.textContent;
-    
-    this.classList.add("loading");
-    saveBtn.disabled = true;
-    saveBtn.textContent = "Saving...";
-    showMessage("� Saving configuration...", "info", 0);
-    
-    fetch("/plugins/arduino-serial-controller/ajax.php?action=save", {
-        method: "POST",
-        body: formData
-    })
-        .then(response => response.json())
-        .then(data => {
-            this.classList.remove("loading");
-            saveBtn.disabled = false;
-            saveBtn.textContent = originalText;
-            
-            if (data.success) {
-                showMessage("��✅ " + data.message, "success");
-                console.log("Save result:", data);
-            } else {
-                showMessage("❌ Save Error: " + data.message, "error");
-                console.log("Save error details:", data);
-            }
-        })
-        .catch(error => {
-            this.classList.remove("loading");
-            saveBtn.disabled = false;
-            saveBtn.textContent = originalText;
-            showMessage("❌ Save Network Error: " + error, "error");
-        });
-});
 
 setTimeout(() => serviceAction("status"), 1000);
 </script>';

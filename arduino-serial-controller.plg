@@ -2,7 +2,7 @@
 <!DOCTYPE PLUGIN [
   <!ENTITY name      "arduino-serial-controller">
   <!ENTITY author    "phred7">
-  <!ENTITY version   "2025.05.25p">
+  <!ENTITY version   "2025.05.26">
   <!ENTITY launch    "Settings/ArduinoSerialControllerSettings">
   <!ENTITY gitURL    "https://github.com/&author;/unraid-arduino-serial-controller">
   <!ENTITY pluginURL "&gitURL;/raw/main/arduino-serial-controller.plg">
@@ -12,55 +12,9 @@
 
 <CHANGES>
 
-###2025.05.25p
-fix settings page
-
-###2025.05.25o
-docker build
-
-###2025.05.25n
-docker build
-
-###2025.05.25m
-docker build
-
-###2025.05.25l
-glibc compatibility
-
-###2025.05.25k
-fix service line endings (permenantly)
-
-###2025.05.25j
-fix service line endings
-fix GLIBC compatibility
-debugging settings page still
-
-###2025.05.25i
-fix settings page
-
-###2025.05.25h
-fix settings page
-
-###2025.05.25g
-fix workflow .txz creation
-
-###2025.05.25f
-fix workflow .txz creation
-
-###2025.05.25e
-fix workflow .txz creation
-
-###2025.05.25d
-fix workflow .txz creation
-
-###2025.05.25c
-fix workflow .txz creation
-
-###2025.05.25b
-debug workflows and build
-
-###2025.05.25a
-debug workflows and build
+###2025.05.26
+- Fix Settings page not loading
+- Implement all settings page functionality and config updating
 
 ###2025.05.25
 - Initial release
