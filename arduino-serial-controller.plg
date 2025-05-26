@@ -2,18 +2,21 @@
 <!DOCTYPE PLUGIN [
   <!ENTITY name      "arduino-serial-controller">
   <!ENTITY author    "phred7">
-  <!ENTITY version   "2025.05.25b">
+  <!ENTITY version   "2025.05.25c">
   <!ENTITY launch    "Settings/ArduinoSerialController">
   <!ENTITY gitURL    "https://github.com/&author;/unraid-arduino-serial-controller">
   <!ENTITY pluginURL "&gitURL;/raw/main/arduino-serial-controller.plg">
 ]>
 
-<PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;" min="6.8.0">
+<PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;" min="6.12.0">
 
 <CHANGES>
 
-###2025.05.25b
+###2025.05.25c
 fix workflow .txz creation
+
+###2025.05.25b
+debug workflows and build
 
 ###2025.05.25a
 debug workflows and build

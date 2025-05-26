@@ -1,0 +1,154 @@
+name: Build and Release Arduino Serial Controller
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.12'
+        
+    - name: Install UV
+      run: |
+        curl -LsSf https://astral.sh/uv/install.sh | sh
+        echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+        
+    - name: Prepare build environment
+      run: |
+        mkdir -p src/arduino_serial_controller
+        cp arduino_serial_controller.py src/arduino_serial_controller/__init__.py
+        
+        # Create __main__.py for executable entry point
+        cat > src/arduino_serial_controller/__main__.py << 'EOF'
+        #!/usr/bin/env python3
+        from . import main
+        if __name__ == '__main__':
+            main()
+        EOF
+        
+    - name: Build executable
+      run: |
+        # Create virtual environment and install dependencies
+        uv venv
+        source .venv/bin/activate
+        
+        # Install project and PyInstaller
+        uv pip install -e .
+        uv pip install pyinstaller
+        
+        # Create executable
+        pyinstaller \
+          --onefile \
+          --name arduino-serial-controller \
+          --console \
+          --clean \
+          --strip \
+          --optimize 2 \
+          --distpath ./dist \
+          --workpath ./build \
+          --specpath ./build \
+          src/arduino_serial_controller/__main__.py
+          
+    - name: Test executable
+      run: |
+        chmod +x dist/arduino-serial-controller
+        file dist/arduino-serial-controller
+        ldd dist/arduino-serial-controller || true
+        
+    - name: Create plugin package
+      run: |
+        # Use the version from the git tag instead of current date
+        VERSION="${{ steps.tag.outputs.tag }}"
+        VERSION=${VERSION#v}  # Remove 'v' prefix if present
+        
+        # Create a minimal txz package (even if empty, the plugin expects it)
+        mkdir -p package/usr/local/emhttp/plugins/arduino-serial-controller
+        echo "# Arduino Serial Controller Plugin Package" > package/usr/local/emhttp/plugins/arduino-serial-controller/README
+        cd package
+        tar -cJf ../arduino-serial-controller-$VERSION.txz .
+        cd ..
+        
+        # Store the filename for later use
+        echo "PACKAGE_FILE=arduino-serial-controller-$VERSION.txz" >> $GITHUB_ENV
+        
+    - name: Get tag name
+      id: tag
+      run: |
+        if [[ $GITHUB_REF == refs/tags/* ]]; then
+          echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+        else
+          echo "tag=v$(date +%Y.%m.%d)" >> $GITHUB_OUTPUT
+        fi
+        
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ steps.tag.outputs.tag }}
+        release_name: Arduino Serial Controller ${{ steps.tag.outputs.tag }}
+        body: |
+          ## Arduino Serial Controller Release ${{ steps.tag.outputs.tag }}
+          
+          ### What's New
+          - Standalone executable for Unraid
+          - No Python installation required
+          - Automatic Arduino communication
+          - System status monitoring
+          - Array state notifications
+          - Shutdown handling
+          
+          ### Installation
+          1. Download the `.plg` file
+          2. Install through Unraid's Plugin Manager
+          3. Configure your Arduino serial port in Settings
+          
+          ### Files
+          - `arduino-serial-controller.plg` - Unraid plugin file
+          - `arduino-serial-controller` - Standalone executable
+          - `arduino-serial-controller-*.txz` - Plugin package
+          
+        draft: false
+        prerelease: false
+        
+    - name: Upload Plugin File
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./arduino-serial-controller.plg
+        asset_name: arduino-serial-controller.plg
+        asset_content_type: application/xml
+        
+    - name: Upload Executable
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./dist/arduino-serial-controller
+        asset_name: arduino-serial-controller
+        asset_content_type: application/octet-stream
+        
+    - name: Upload Package
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./${{ env.PACKAGE_FILE }}
+        asset_name: ${{ env.PACKAGE_FILE }}
+        asset_content_type: application/x-xz
