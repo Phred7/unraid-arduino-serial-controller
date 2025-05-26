@@ -17,6 +17,10 @@ if ($_POST && isset($_POST['save_config'])) {
     $log_level = trim($_POST['log_level']);
     $retry_attempts = trim($_POST['retry_attempts']);
     $retry_delay = trim($_POST['retry_delay']);
+    $ups_name = trim($_POST['ups_name']);
+
+    $enable_ups = isset($_POST['enable_ups']) ? 'true' : 'false';
+    $enable_disk = isset($_POST['enable_disk']) ? 'true' : 'false';
 
     $config_dir = dirname($settings_file);
     if (!is_dir($config_dir)) {
@@ -32,6 +36,10 @@ if ($_POST && isset($_POST['save_config'])) {
     $content .= "log_level=" . $log_level . "\n";
     $content .= "retry_attempts=" . $retry_attempts . "\n";
     $content .= "retry_delay=" . $retry_delay . "\n";
+    $content .= "enable_ups_monitoring=" . $enable_ups . "\n";
+    $content .= "ups_name=" . $ups_name . "\n";
+    $content .= "enable_disk_monitoring=" . $enable_disk . "\n";
+
 
     $write_result = file_put_contents($settings_file, $content);
     
@@ -53,7 +61,10 @@ function load_settings($file) {
         'timeout' => '5',
         'log_level' => 'INFO',
         'retry_attempts' => '3',
-        'retry_delay' => '5'
+        'retry_delay' => '5',
+        'enable_ups' => 'true',
+        'ups_name' => 'apc2200',
+        'enable_disk' => 'true'
     ];
     
     if (file_exists($file)) {
@@ -195,6 +206,28 @@ echo '<div class="form-group">';
 echo '<label for="retry_delay">Retry Delay (sec):</label>';
 echo '<input type="number" name="retry_delay" value="' . htmlspecialchars($settings['retry_delay']) . '" min="1" max="30">';
 echo '<br><small>Delay between retry attempts</small>';
+echo '</div>';
+
+echo '<div class="form-group">';
+echo '<label for="enable_ups">';
+$checked = ($settings['enable_ups']) ? 'checked' : '';
+echo '<input type="checkbox" name="enable_ups" id="enable_ups" value="1" ' . $checked . '> ';
+echo 'Enable UPS Monitoring';
+echo '</label>';
+echo '</div>';
+
+echo '<div class="form-group">';
+echo '<label for="ups_name">UPS Name:</label>';
+echo '<input type="text" name="ups_name" value="' . htmlspecialchars($settings['ups_name']) . '" placeholder="apc2200">';
+echo '<br><small>Name of the UPS to monitor</small>';
+echo '</div>';
+
+echo '<div class="form-group">';
+echo '<label for="enable_disk">';
+$checked = ($settings['enable_disk']) ? 'checked' : '';
+echo '<input type="checkbox" name="enable_disk" id="enable_disk" value="1" ' . $checked . '> ';
+echo 'Enable Disk Monitoring';
+echo '</label>';
 echo '</div>';
 
 echo '<button type="submit" name="save_config" class="btn btn-primary">Save Configuration</button>';

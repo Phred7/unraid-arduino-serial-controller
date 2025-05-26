@@ -2,7 +2,7 @@
 <!DOCTYPE PLUGIN [
   <!ENTITY name      "arduino-serial-controller">
   <!ENTITY author    "phred7">
-  <!ENTITY version   "2025.05.26a">
+  <!ENTITY version   "2025.05.26b">
   <!ENTITY launch    "Settings/ArduinoSerialControllerSettings">
   <!ENTITY gitURL    "https://github.com/&author;/unraid-arduino-serial-controller">
   <!ENTITY pluginURL "&gitURL;/raw/main/arduino-serial-controller.plg">
@@ -11,6 +11,11 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;" min="6.12.0">
 
 <CHANGES>
+
+###2025.05.26b
+- Update python scrript with better code
+- Add ups and disk monitoring
+- Add config options for both ^
 
 ###2025.05.26a
 - Add AJAX file to installation

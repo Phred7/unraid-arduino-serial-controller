@@ -247,3 +247,6 @@ This project is open source. Feel free to modify and distribute according to you
 - use the dev console's network tab for debugging settings
 - example plugin (gpustat): `https://github.com/b3rs3rk/gpustat-unraid/tree/dev`
 - example plugin (intel-gpu-top): `https://github.com/ich777/intel-gpu-top/tree/master`
+- Find arduino with `ls -la /dev/tty* | grep -E "(USB|ACM)"` TODO: add this to the settings page
+- TODO: fan plugin: disk temp visualizer / temp visualizer / fan controller / fan zone controller / better fan script
+
