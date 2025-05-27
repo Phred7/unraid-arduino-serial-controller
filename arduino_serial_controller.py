@@ -14,6 +14,7 @@ import subprocess
 import sys
 import threading
 import time
+import glob
 from dataclasses import dataclass, field, fields, asdict
 from datetime import datetime
 from pathlib import Path
@@ -27,7 +28,7 @@ DEFAULT_LOG_DIR = Path('/var/log/arduino-serial-controller')
 ARDUINO_INIT_DELAY = 2.0
 ARRAY_CHECK_INTERVAL = 10
 MAIN_LOOP_INTERVAL = 1
-VERSION = '2025.05.26b'
+VERSION = '2025.05.26'
 
 # Temperature sensor paths in order of preference
 TEMP_SENSOR_PATHS = [
@@ -244,16 +245,62 @@ class SystemMonitor:
     
     @staticmethod
     def get_array_status() -> str:
-        """Get Unraid array status"""
+        """Get Unraid array status using Unraid-specific methods"""
         try:
+            # Method 1: Check Unraid's var.ini file (most reliable)
+            var_ini_path = '/var/local/emhttp/var.ini'
+            if os.path.exists(var_ini_path):
+                with open(var_ini_path, 'r') as f:
+                    for line in f:
+                        if line.startswith('mdState='):
+                            state = line.split('=')[1].strip().strip('"')
+                            # Unraid states: STOPPED, STARTED, STARTING, STOPPING
+                            if state in ['STARTED']:
+                                return 'started'
+                            elif state in ['STOPPED']:
+                                return 'stopped'
+                            elif state in ['STARTING', 'STOPPING']:
+                                return 'transitioning'
+                            else:
+                                return state.lower()
+            
+            # Method 2: Check if array mount point exists and has mounted drives
+            if os.path.exists('/mnt/user') and os.path.ismount('/mnt/user'):
+                # Check if any drives are mounted under /mnt/disk*
+                import glob
+                mounted_disks = glob.glob('/mnt/disk*')
+                if mounted_disks:
+                    # Check if any of these are actually mounted
+                    for disk_path in mounted_disks:
+                        if os.path.ismount(disk_path):
+                            return 'started'
+            
+            # Method 3: Use mdcmd command (Unraid specific)
+            try:
+                result = subprocess.run(['mdcmd', 'status'], 
+                                      capture_output=True, text=True, timeout=5)
+                if result.returncode == 0:
+                    output = result.stdout.lower()
+                    if 'started' in output:
+                        return 'started'
+                    elif 'stopped' in output:
+                        return 'stopped'
+            except (subprocess.TimeoutExpired, subprocess.SubprocessError, FileNotFoundError):
+                pass  # mdcmd might not be available
+            
+            # Method 4: Fallback - check /proc/mdstat but with better parsing
             if os.path.exists('/proc/mdstat'):
                 with open('/proc/mdstat', 'r') as f:
                     mdstat = f.read()
-                    if 'active' in mdstat:
+                    # Look for active md devices
+                    if 'md' in mdstat and 'active' in mdstat:
                         return 'started'
+            
+            # If we can't determine status, assume stopped
             return 'stopped'
-        except OSError as e:
-            logging.error(f"Error reading array status: {e}")
+            
+        except Exception as e:
+            logging.error(f"Error reading Unraid array status: {e}")
             return 'unknown'
 
 

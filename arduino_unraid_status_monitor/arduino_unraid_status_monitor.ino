@@ -58,7 +58,7 @@ void setup() {
   FastLED.show();
   
   // Initialize serial
-  Serial.begin(9600);
+  Serial.begin(115200);
   inputBuffer.reserve(2048);  // Much larger buffer now!
   
   // Startup animation - full rainbow sweep
