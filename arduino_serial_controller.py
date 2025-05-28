@@ -29,6 +29,8 @@ ARDUINO_INIT_DELAY = 2.0
 ARRAY_CHECK_INTERVAL = 10
 MAIN_LOOP_INTERVAL = 1
 VERSION = '2025.05.26'
+COMMUNICATION_TIMEOUT = 60  # 60 seconds without Arduino response = comm error
+ARDUINO_HEARTBEAT_INTERVAL = 30  # Send heartbeat every 30 seconds
 
 # Temperature sensor paths in order of preference
 TEMP_SENSOR_PATHS = [
@@ -124,7 +126,7 @@ class DiskInfo:
 class ArduinoControllerConfig:
     """Configuration dataclass for Arduino Serial Controller"""
     serial_port: str = '/dev/ttyUSB0'
-    baud_rate: int = 9600
+    baud_rate: int = 115200  # Updated to match Arduino
     update_interval: int = 30  # seconds
     timeout: int = 5
     log_level: str = 'INFO'
@@ -566,6 +568,12 @@ class ArduinoSerialController:
         self.running = False
         self.shutdown_initiated = False
         
+        # Communication health tracking
+        self.last_arduino_response_time = 0
+        self.last_heartbeat_time = 0
+        self.arduino_parse_errors = 0
+        self.communication_healthy = False
+        
         # Setup logging
         self.logger = self._setup_logging()
         
@@ -628,6 +636,12 @@ class ArduinoSerialController:
                 )
                 self.logger.info(f"Connected to Arduino on {self.config.serial_port}")
                 time.sleep(ARDUINO_INIT_DELAY)  # Give Arduino time to initialize
+                
+                # Reset communication health tracking
+                self.last_arduino_response_time = time.time()
+                self.communication_healthy = True
+                self.arduino_parse_errors = 0
+                
                 return True
                 
             except serial.SerialException as e:
@@ -641,10 +655,40 @@ class ArduinoSerialController:
         
         return False
     
+    def _arduino_serial_reader(self) -> None:
+        """Thread function to continuously read from Arduino serial connection"""
+        while self.running and self.serial_connection and self.serial_connection.is_open:
+            try:
+                if self.serial_connection.in_waiting > 0:
+                    line = self.serial_connection.readline().decode('utf-8', errors='ignore').strip()
+                    if line:
+                        # Log Arduino output with clear prefix
+                        self.logger.info(f"[ARDUINO] {line}")
+                        self.last_arduino_response_time = time.time()
+                        
+                        # Check for specific Arduino status messages
+                        if "JSON Error:" in line:
+                            self.arduino_parse_errors += 1
+                            self.logger.warning(f"Arduino JSON parse error detected. Total errors: {self.arduino_parse_errors}")
+                        elif "Connection timeout" in line:
+                            self.logger.warning("Arduino detected connection timeout")
+                        elif "Buffer overflow" in line:
+                            self.logger.error("Arduino buffer overflow detected")
+                            
+                time.sleep(0.1)  # Short sleep to prevent excessive CPU usage
+                
+            except (serial.SerialException, OSError) as e:
+                self.logger.error(f"Error reading from Arduino: {e}")
+                break
+            except Exception as e:
+                self.logger.error(f"Unexpected error in Arduino reader: {e}")
+                break
+    
     def _send_message(self, message_type: str, data: Optional[Dict[str, Any]] = None) -> bool:
         """Send message to Arduino with detailed logging"""
         if not self.serial_connection or not self.serial_connection.is_open:
             self.logger.warning("Cannot send message: serial connection not available")
+            self.communication_healthy = False
             return False
         
         try:
@@ -656,17 +700,23 @@ class ArduinoSerialController:
             
             json_message = json.dumps(message) + '\n'
             
-            # Log the data being sent (feature request #1)
-            self.logger.info(f"Sending to Arduino - Type: {message_type}, Data: {json.dumps(data, indent=2) if data else 'None'}")
+            # Log the data being sent
+            self.logger.info(f"Sending to Arduino - Type: {message_type}")
+            if data:
+                self.logger.debug(f"Data payload: {json.dumps(data, indent=2)}")
             
             self.serial_connection.write(json_message.encode('utf-8'))
             self.serial_connection.flush()
+            
+            # Update heartbeat time
+            self.last_heartbeat_time = time.time()
             
             self.logger.debug(f"Successfully sent message: {message_type}")
             return True
             
         except (serial.SerialException, OSError) as e:
             self.logger.error(f"Serial error sending message: {e}")
+            self.communication_healthy = False
             return False
         except json.JSONEncodeError as e:
             self.logger.error(f"JSON encoding error: {e}")
@@ -678,6 +728,36 @@ class ArduinoSerialController:
     def _send_arduino_message(self, arduino_msg: ArduinoMessage) -> bool:
         """Send optimized Arduino message"""
         return self._send_message('status_update', arduino_msg.to_dict())
+    
+    def _check_communication_health(self) -> None:
+        """Check and update communication health status"""
+        current_time = time.time()
+        
+        # Check if we haven't received Arduino response in timeout period
+        if current_time - self.last_arduino_response_time > COMMUNICATION_TIMEOUT:
+            if self.communication_healthy:
+                self.logger.error(f"Arduino communication timeout! No response for {COMMUNICATION_TIMEOUT} seconds")
+                self.communication_healthy = False
+                # Send communication error notification
+                self._send_message('communication_error', {
+                    'error_type': 'timeout',
+                    'timeout_seconds': COMMUNICATION_TIMEOUT,
+                    'last_response_ago': current_time - self.last_arduino_response_time
+                })
+        
+        # Check for excessive parse errors
+        if self.arduino_parse_errors > 5:  # More than 5 parse errors
+            if self.communication_healthy:
+                self.logger.error(f"Too many Arduino parse errors: {self.arduino_parse_errors}")
+                self.communication_healthy = False
+                self._send_message('communication_error', {
+                    'error_type': 'parse_errors',
+                    'error_count': self.arduino_parse_errors
+                })
+        
+        # Send periodic heartbeat if needed
+        if current_time - self.last_heartbeat_time > ARDUINO_HEARTBEAT_INTERVAL:
+            self._send_message('heartbeat', {'timestamp': datetime.now().isoformat()})
     
     def _get_system_status(self) -> ArduinoMessage:
         """Collect comprehensive system status in optimized format"""
@@ -772,8 +852,18 @@ class ArduinoSerialController:
         """Send periodic status updates to Arduino"""
         while self.running:
             try:
+                # Check communication health
+                self._check_communication_health()
+                
+                # Send status update
                 status = self._get_system_status()
-                self._send_arduino_message(status)
+                success = self._send_arduino_message(status)
+                
+                if success and not self.communication_healthy:
+                    # Communication was restored
+                    self.logger.info("Arduino communication restored")
+                    self.communication_healthy = True
+                    self.arduino_parse_errors = 0  # Reset error count
                 
                 time.sleep(self.config.update_interval)
                 
@@ -789,7 +879,8 @@ class ArduinoSerialController:
     def _is_connection_healthy(self) -> bool:
         """Check if serial connection is healthy"""
         return (self.serial_connection is not None and 
-                self.serial_connection.is_open)
+                self.serial_connection.is_open and
+                self.communication_healthy)
     
     def shutdown(self) -> None:
         """Graceful shutdown"""
@@ -848,11 +939,17 @@ class ArduinoSerialController:
             daemon=True, 
             name="ArrayMonitorThread"
         )
+        arduino_reader_thread = threading.Thread(
+            target=self._arduino_serial_reader,
+            daemon=True,
+            name="ArduinoReaderThread"
+        )
         
-        self.monitor_threads = [status_thread, array_thread]
+        self.monitor_threads = [status_thread, array_thread, arduino_reader_thread]
         
         status_thread.start()
         array_thread.start()
+        arduino_reader_thread.start()
         
         self.logger.info("Arduino Serial Controller is running...")
         
@@ -864,9 +961,27 @@ class ArduinoSerialController:
                 # Reconnect if connection lost
                 if not self._is_connection_healthy():
                     self.logger.warning("Serial connection lost, attempting to reconnect...")
+                    if self.serial_connection:
+                        try:
+                            self.serial_connection.close()
+                        except:
+                            pass
+                    
                     if not self._connect_arduino():
                         self.logger.error("Failed to reconnect, will retry...")
                         time.sleep(self.config.retry_delay)
+                    else:
+                        # Restart Arduino reader thread if connection restored
+                        for i, thread in enumerate(self.monitor_threads):
+                            if thread.name == "ArduinoReaderThread" and not thread.is_alive():
+                                new_reader_thread = threading.Thread(
+                                    target=self._arduino_serial_reader,
+                                    daemon=True,
+                                    name="ArduinoReaderThread"
+                                )
+                                self.monitor_threads[i] = new_reader_thread
+                                new_reader_thread.start()
+                                break
                         
         except KeyboardInterrupt:
             self.logger.info("Keyboard interrupt received")
